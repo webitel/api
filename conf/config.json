@@ -6,7 +6,10 @@
   "mongodb": {
     "uri": "mongodb://10.10.10.200:27017/webitel",
     "callbackQueueCollection": "callbackQueue",
-    "callbackMembersCollection": "callbackMembers"
+    "callbackMembersCollection": "callbackMembers",
+    "authTokenCollection": "authToken",
+    "domainsCollection": "domains",
+    "aclCollection": "aclPermissions"
   },
   "application": {
     "auth": {

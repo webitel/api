@@ -2,7 +2,8 @@ package rest
 
 import (
 	"../../db"
-	"../../services"
+	"../../services/auth"
+	"../../services/callback"
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/context"
 	"github.com/kataras/iris/core/router"
@@ -28,7 +29,8 @@ func injectCallmeV2(api router.Party, app router.Party) {
 }
 
 func queueList(ctx context.Context) {
-	data, err := services.CallbackQueueList(db.RequestListFromUri(ctx))
+
+	data, err := callback.CallbackQueueList(auth.GetSessionFromContext(ctx), db.RequestListFromUri(ctx))
 	if err != nil {
 		ctx.StatusCode(err.Code)
 		ctx.JSON(map[string]interface{}{
@@ -45,7 +47,7 @@ func queueList(ctx context.Context) {
 }
 
 func queueItem(ctx context.Context) {
-	data, err := services.CallbackQueueItem(ctx.Params().Get("queueId"))
+	data, err := callback.CallbackQueueItem(ctx.Params().Get("queueId"))
 	if err != nil {
 		ctx.StatusCode(err.Code)
 		ctx.JSON(map[string]interface{}{
@@ -62,7 +64,7 @@ func queueItem(ctx context.Context) {
 }
 
 func queueCreate(ctx context.Context) {
-	var q *services.Queue
+	var q *callback.Queue
 	err := ctx.ReadJSON(&q)
 	if err != nil {
 		ctx.StatusCode(iris.StatusBadRequest)
@@ -73,7 +75,7 @@ func queueCreate(ctx context.Context) {
 		return
 	}
 
-	cError := services.CallbackQueueCreate(q)
+	cError := callback.CallbackQueueCreate(q)
 
 	if cError != nil {
 		ctx.StatusCode(cError.Code)
@@ -93,7 +95,7 @@ func queueCreate(ctx context.Context) {
 }
 
 func queueDelete(ctx context.Context) {
-	err := services.CallbackQueueDelete(ctx.Params().Get("queueId"))
+	err := callback.CallbackQueueDelete(ctx.Params().Get("queueId"))
 	if err != nil {
 		ctx.StatusCode(err.Code)
 		ctx.JSON(map[string]interface{}{
@@ -114,7 +116,7 @@ func queueUpdate(ctx context.Context) {
 }
 
 func membersList(ctx context.Context) {
-	data, err := services.CallbackMembersList(ctx.Params().Get("queueId"), db.RequestListFromUri(ctx))
+	data, err := callback.CallbackMembersList(ctx.Params().Get("queueId"), db.RequestListFromUri(ctx))
 	if err != nil {
 		ctx.StatusCode(err.Code)
 		ctx.JSON(map[string]interface{}{
@@ -132,7 +134,7 @@ func membersList(ctx context.Context) {
 
 func memberCreate(ctx context.Context) {
 
-	var m *services.Member
+	var m *callback.Member
 	err := ctx.ReadJSON(&m)
 	if err != nil {
 		ctx.StatusCode(iris.StatusBadRequest)
@@ -143,7 +145,7 @@ func memberCreate(ctx context.Context) {
 		return
 	}
 
-	cError := services.CallbackMemberCreate(ctx.Params().Get("queueId"), m)
+	cError := callback.CallbackMemberCreate(ctx.Params().Get("queueId"), m)
 
 	if cError != nil {
 		ctx.StatusCode(cError.Code)
@@ -163,7 +165,7 @@ func memberCreate(ctx context.Context) {
 }
 
 func memberItem(ctx context.Context) {
-	data, err := services.CallbackMemberItem(ctx.Params().Get("queueId"), ctx.Params().Get("memberId"))
+	data, err := callback.CallbackMemberItem(ctx.Params().Get("queueId"), ctx.Params().Get("memberId"))
 	if err != nil {
 		ctx.StatusCode(err.Code)
 		ctx.JSON(map[string]interface{}{
@@ -184,7 +186,7 @@ func memberUpdate(ctx context.Context) {
 }
 
 func memberDelete(ctx context.Context) {
-	err := services.CallbackMemberDelete(ctx.Params().Get("queueId"), ctx.Params().Get("memberId"))
+	err := callback.CallbackMemberDelete(ctx.Params().Get("queueId"), ctx.Params().Get("memberId"))
 	if err != nil {
 		ctx.StatusCode(err.Code)
 		ctx.JSON(map[string]interface{}{

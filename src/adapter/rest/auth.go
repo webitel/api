@@ -2,6 +2,7 @@ package rest
 
 import (
 	. "../../config"
+	"../../services/auth"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/kataras/iris"
@@ -24,19 +25,6 @@ func init() {
 type tokenKey struct {
 	Token string `json:"access_token"`
 	Key   string `json:"x_key"`
-}
-
-type claims struct {
-	jwt.StandardClaims
-	Id      string              `json:"id,omitempty"`
-	Acl     map[string][]string `json:"acl"`
-	Version int8                `json:"v,omitempty"`
-	Domain  string              `json:"d,omitempty"`
-	Type    string              `json:"t,omitempty"`
-}
-
-func (c *claims) Hi() {
-	fmt.Println(c)
 }
 
 func apiV2Router(app *iris.Application) router.Party {
@@ -72,11 +60,24 @@ func apiV2Router(app *iris.Application) router.Party {
 		}
 
 		if c.Version == 2 && c.Type == "domain" {
-
-		}
-
-		if key != "" {
-
+			e, role := auth.AclFindDomain(c.Id, c.Domain)
+			if e != nil {
+				ctx.StatusCode(INVALID_TOKEN_ERROR.Code)
+				ctx.JSON(INVALID_TOKEN_ERROR)
+				return
+			}
+			c.RoleName = role
+		} else if key != "" {
+			e := auth.AclFindAuth(key, c)
+			if e != nil {
+				ctx.StatusCode(INVALID_TOKEN_ERROR.Code)
+				ctx.JSON(INVALID_TOKEN_ERROR)
+				return
+			}
+		} else {
+			ctx.StatusCode(INVALID_TOKEN_ERROR.Code)
+			ctx.JSON(INVALID_TOKEN_ERROR)
+			return
 		}
 
 		ctx.Values().Set("user", c)
@@ -84,9 +85,9 @@ func apiV2Router(app *iris.Application) router.Party {
 	})
 }
 
-func decodeToken(data string) (c *claims, err error) {
+func decodeToken(data string) (c *auth.Session, err error) {
 	var token *jwt.Token
-	token, err = jwt.ParseWithClaims(data, &claims{}, func(token *jwt.Token) (interface{}, error) {
+	token, err = jwt.ParseWithClaims(data, &auth.Session{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
 		}
@@ -99,7 +100,7 @@ func decodeToken(data string) (c *claims, err error) {
 	}
 
 	var ok bool
-	if c, ok = token.Claims.(*claims); ok && token.Valid {
+	if c, ok = token.Claims.(*auth.Session); ok && token.Valid {
 		return
 	} else {
 		err = errors.New("Bad token")

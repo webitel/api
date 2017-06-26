@@ -1,17 +1,13 @@
-package services
+package callback
 
 import (
-	"../db"
-	. "../helper"
+	"../../db"
+	. "../../helper"
+	"../../services/auth"
+	. "../../services/shared"
 	"github.com/kataras/iris/core/errors"
 	"gopkg.in/mgo.v2/bson"
 )
-
-var DB *db.DB
-
-func init() {
-	DB = db.NewDB("")
-}
 
 type Queue struct {
 	Id          bson.ObjectId `bson:"_id,omitempty" json:"_id,omitempty"`
@@ -32,10 +28,19 @@ type location struct {
 	Longitude   float32 `bson:"longitude,omitempty" json:"longitude,omitempty"`
 }
 
+type Comment struct {
+	CreatedOn int    `bson:"createdOn,omitempty" json:"createdOn,omitempty"`
+	CreatedBy string `bson:"createdBy,omitempty" json:"createdBy,omitempty"`
+	Data      string `bson:"data,omitempty" json:"data,omitempty"`
+}
+
 type Member struct {
 	Id           bson.ObjectId `bson:"_id,omitempty" json:"_id,omitempty"`
 	Queue        string        `bson:"queue,omitempty" json:"queue,omitempty"`
 	WidgetId     string        `bson:"widgetId" json:"widgetId"`
+	Done         bool          `bson:"done" json:"done"`
+	DoneAt       int           `bson:"doneAt" json:"doneAt"`
+	DoneBy       string        `bson:"doneBy" json:"doneBy"`
 	Domain       string        `bson:"domain" json:"domain"`
 	Number       string        `bson:"number" json:"number"`
 	CreatedOn    int64         `bson:"createdOn,omitempty"`
@@ -43,12 +48,27 @@ type Member struct {
 	Href         string        `bson:"href,omitempty" json:"href,omitempty"`
 	UserAgent    string        `bson:"userAgent,omitempty" json:"userAgent,omitempty"`
 	Location     location      `bson:"location,omitempty" json:"location,omitempty"`
+	Comments     []Comment     `bson:"comments" json:"comments"`
 }
 
+var errorDomainIsRequired = NewCodeError(400, errors.New("Domain is required"))
+
 // region Queue Service
-func CallbackQueueList(r *db.Request) (*[]Queue, *CodeError) {
+func CallbackQueueList(s *auth.Session, r *db.Request) (*[]Queue, *CodeError) {
+	err := auth.CheckAcl(s.RoleName, "account", "d")
+	if err != nil {
+		return nil, err
+	}
+	if s.Domain != "" {
+		r.Filter["domain"] = s.Domain
+	}
+
+	if _, ok := r.Filter["domain"]; !ok {
+		return nil, errorDomainIsRequired
+	}
+
 	data := &[]Queue{}
-	err := DB.CallbackQueueList(r, data)
+	//err = DB.CallbackQueueList(r, data)
 
 	if err != nil {
 		return data, err

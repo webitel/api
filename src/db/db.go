@@ -76,6 +76,6 @@ func RequestListFromUri(ctx context.Context) *Request {
 		}
 	}
 
-	fmt.Println(r)
+	//fmt.Println(r)
 	return r
 }

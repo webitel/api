@@ -11,7 +11,7 @@ func injectCORS(app *iris.Application) {
 		AllowedHeaders:   []string{"Content-Type", "X-Key", "X-Access-Token"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
 		AllowCredentials: true,
-		Debug:            true,
+		Debug:            false,
 	}
 	corsWrapper := cors.New(corsOptions).ServeHTTP
 
