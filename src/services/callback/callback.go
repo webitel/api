@@ -30,9 +30,10 @@ type location struct {
 }
 
 type Comment struct {
-	CreatedOn int    `bson:"createdOn,omitempty" json:"createdOn,omitempty"`
-	CreatedBy string `bson:"createdBy,omitempty" json:"createdBy,omitempty"`
-	Data      string `bson:"data,omitempty" json:"data,omitempty"`
+	Id        bson.ObjectId `bson:"_id" json:"_id"`
+	CreatedOn int64         `bson:"createdOn,omitempty" json:"createdOn,omitempty"`
+	CreatedBy string        `bson:"createdBy,omitempty" json:"createdBy,omitempty"`
+	Data      string        `bson:"data,omitempty" json:"data,omitempty"`
 }
 
 type Member struct {
@@ -53,6 +54,7 @@ type Member struct {
 }
 
 var errorDomainIsRequired = NewCodeError(400, errors.New("Domain is required"))
+var errorDataIsRequired = NewCodeError(400, errors.New("Data is required"))
 
 // region Queue Service
 func CallbackQueueList(s *auth.Session, r *db.Request) (*[]Queue, *CodeError) {
@@ -106,10 +108,6 @@ func CallbackQueueDelete(queueId string) *CodeError {
 	return DB.CallbackQueueDelete(queueId)
 }
 
-func CallbackMemberUpdate(s *auth.Session, queueId, memberId string, doc map[string]interface{}) *CodeError {
-	return DB.CallbackMemberUpdate(queueId, memberId, doc)
-}
-
 // endregion
 
 //region Members Service
@@ -130,6 +128,7 @@ func CallbackMemberCreate(queueId string, m *Member) *CodeError {
 
 	m.Id = db.MakeId()
 	m.Queue = queueId
+	m.CreatedOn = CurrentTimestamp()
 	return DB.CallbackMemberCreate(m)
 }
 
@@ -150,6 +149,20 @@ func CallbackMemberDelete(queueId string, memberId string) *CodeError {
 	}
 
 	return nil
+}
+
+func CallbackMemberUpdate(s *auth.Session, queueId, memberId string, doc map[string]interface{}) *CodeError {
+	return DB.CallbackMemberUpdate(queueId, memberId, doc)
+}
+
+func CallbackMemberCommentAdd(s *auth.Session, queueId, memberId string, comment *Comment) *CodeError {
+	if comment.Data == "" {
+		return errorDataIsRequired
+	}
+	comment.Id = db.MakeId()
+	comment.CreatedBy = s.Id
+	comment.CreatedOn = CurrentTimestamp()
+	return DB.CallbackMemberCommentAdd(queueId, memberId, comment)
 }
 
 // endregion

@@ -165,7 +165,7 @@ func (db *DB) CallbackMemberUpdate(queueId, memberId string, data map[string]int
 	set := bson.M{}
 
 	for k, v := range data {
-		if k == "_id" || k == "domain" || k == "queue" {
+		if k == "_id" || k == "domain" || k == "queue" || k == "comments" {
 			continue
 		}
 		set[k] = v
@@ -177,6 +177,33 @@ func (db *DB) CallbackMemberUpdate(queueId, memberId string, data map[string]int
 	}, bson.M{
 		"$set": set,
 	})
+	if e == mgo.ErrNotFound {
+		err = helper.NewCodeError(404, e)
+	} else if e != nil {
+		err = helper.NewCodeError(500, e)
+	}
+	return
+}
+
+func (db *DB) CallbackMemberCommentAdd(queueId, memberId string, dataStructure interface{}) (err *helper.CodeError) {
+	if !bson.IsObjectIdHex(queueId) {
+		err = helper.NewCodeError(403, errors.New("Bad queueId"))
+		return
+	}
+	if !bson.IsObjectIdHex(memberId) {
+		err = helper.NewCodeError(403, errors.New("Bad memberId"))
+		return
+	}
+
+	e := db.db.C(COLLECTION_MEMBERS).Update(bson.M{
+		"_id":   bson.ObjectIdHex(memberId),
+		"queue": queueId,
+	}, bson.M{
+		"$push": bson.M{
+			"comments": dataStructure,
+		},
+	})
+
 	if e == mgo.ErrNotFound {
 		err = helper.NewCodeError(404, e)
 	} else if e != nil {

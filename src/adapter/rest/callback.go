@@ -22,9 +22,10 @@ func injectCallmeV2(api router.Party, app router.Party) {
 
 		callback.Get("/{queueId}/members", membersList) //+
 		//callback.Post("/{queueId}/members", memberCreate)
-		callback.Get("/{queueId}/members/{memberId}", memberItem)      //+
-		callback.Put("/{queueId}/members/{memberId}", memberUpdate)    //TODO
-		callback.Delete("/{queueId}/members/{memberId}", memberDelete) //+
+		callback.Get("/{queueId}/members/{memberId}", memberItem)                 //+
+		callback.Put("/{queueId}/members/{memberId}", memberUpdate)               //+
+		callback.Delete("/{queueId}/members/{memberId}", memberDelete)            //+
+		callback.Post("/{queueId}/members/{memberId}/comments", memberAddComment) //+
 	}
 }
 
@@ -248,6 +249,42 @@ func memberDelete(ctx context.Context) {
 		"info":   "Success",
 		"status": "OK",
 	})
+}
+
+func memberAddComment(ctx context.Context) {
+	var comment *callback.Comment
+	err := ctx.ReadJSON(&comment)
+	if err != nil {
+		ctx.StatusCode(iris.StatusBadRequest)
+		ctx.JSON(map[string]interface{}{
+			"info":   err.Error(),
+			"status": "error",
+		})
+		return
+	}
+
+	cError := callback.CallbackMemberCommentAdd(
+		auth.GetSessionFromContext(ctx),
+		ctx.Params().Get("queueId"),
+		ctx.Params().Get("memberId"),
+		comment,
+	)
+
+	if cError != nil {
+		ctx.StatusCode(cError.Code)
+		ctx.JSON(map[string]interface{}{
+			"info":   cError.Error(),
+			"status": "error",
+		})
+		return
+	}
+
+	ctx.StatusCode(iris.StatusOK)
+	ctx.JSON(map[string]interface{}{
+		"data":   comment,
+		"status": "OK",
+	})
+	return
 }
 
 func listCall(ctx context.Context) {

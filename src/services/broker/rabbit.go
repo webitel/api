@@ -1,9 +1,7 @@
 package broker
 
 import (
-	"encoding/json"
-	"fmt"
-	"github.com/satori/go.uuid"
+	"../../logger"
 	"github.com/streadway/amqp"
 	"log"
 	"sync"
@@ -18,70 +16,25 @@ type Consumer struct {
 	mx      *sync.Mutex
 }
 
-type response struct {
-	Allow bool `json:"allow"`
+type Message struct {
+	Api  string      `json:"exec-api"`
+	Args interface{} `json:"exec-args"`
 }
 
-func (c *Consumer) Send() (r *response) {
-	body, _ := json.Marshal(&request{"root", "accounts", "r"})
-	uId := uuid.NewV4().String()
-	cResp := make(chan []byte, 1)
-	c.mx.Lock()
-	c.api[uId] = cResp
-	c.mx.Unlock()
-	c.channel.Publish(
-		"engine",       // exchange
-		"*.auth.check", // routing key
-		false,          // mandatory
-		false,          // immediate
-		amqp.Publishing{
-			ContentType: "text/json",
-			Body:        []byte(body),
-			MessageId:   uId,
-			ReplyTo:     "*.auth.check.response",
-		})
-	<-cResp
-	return
-}
-
-type request struct {
-	Role     string `json:"role"`
-	Resource string `json:"resource"`
-	Perm     string `json:"perm"`
-}
-
-var c *Consumer
-
-func init() {
-	c = New()
-}
-
-func Send() *response {
-	return c.Send()
-}
-
-func New() *Consumer {
-	c := &Consumer{
-		conn:    nil,
-		channel: nil,
-		tag:     "",
-		done:    make(chan error),
-		api:     make(map[string]chan []byte),
-		mx:      &sync.Mutex{},
-	}
-	var err error
-
+func (c *Consumer) Connect() (err error) {
+	logger.Debug("Try connect amq")
 	c.conn, err = amqp.Dial("amqp://webitel:secret@10.10.10.200:5672")
 	if err != nil {
-		panic(err)
+		logger.Error("Connect amq err: %s", err.Error())
+		return c.Connect()
 	}
+	logger.Info("Connect to amq successful")
 
 	go func() {
 		e := <-c.conn.NotifyClose(make(chan *amqp.Error))
-		fmt.Printf("closing: %s", e)
-		panic(e)
+		logger.Error("Closing amq: %s", e)
+		c.Connect()
 	}()
-	log.Printf("got Connection, getting Channel")
 
 	c.channel, err = c.conn.Channel()
 	if err != nil {
@@ -125,8 +78,56 @@ func New() *Consumer {
 	}
 
 	go handle(deliveries, c.done, c)
+	return
+}
+
+func init() {
+	New()
+}
+
+func New() *Consumer {
+	c := &Consumer{
+		conn:    nil,
+		channel: nil,
+		tag:     "",
+		done:    make(chan error),
+		api:     make(map[string]chan []byte),
+		mx:      &sync.Mutex{},
+	}
+
+	c.Connect()
+
 	return c
 }
+
+//
+//func (c *Consumer) Send() (r *response) {
+//	body, _ := json.Marshal(&request{"root", "accounts", "r"})
+//	uId := uuid.NewV4().String()
+//	cResp := make(chan []byte, 1)
+//	c.mx.Lock()
+//	c.api[uId] = cResp
+//	c.mx.Unlock()
+//	c.channel.Publish(
+//		"engine",       // exchange
+//		"*.auth.check", // routing key
+//		false,          // mandatory
+//		false,          // immediate
+//		amqp.Publishing{
+//			ContentType: "text/json",
+//			Body:        []byte(body),
+//			MessageId:   uId,
+//			ReplyTo:     "*.auth.check.response",
+//		})
+//	<-cResp
+//	return
+//}
+
+//type request struct {
+//	Role     string `json:"role"`
+//	Resource string `json:"resource"`
+//	Perm     string `json:"perm"`
+//}
 
 func handle(deliveries <-chan amqp.Delivery, done chan error, c *Consumer) {
 	for d := range deliveries {
