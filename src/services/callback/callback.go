@@ -12,6 +12,7 @@ import (
 type Queue struct {
 	Id          bson.ObjectId `bson:"_id,omitempty" json:"_id,omitempty"`
 	Name        string        `bson:"name,omitempty" json:"name,omitempty"`
+	Domain      string        `bson:"domain,omitempty" json:"domain,omitempty"`
 	Description string        `bson:"description,omitempty" json:"description,omitempty"`
 }
 
@@ -68,12 +69,17 @@ func CallbackQueueList(s *auth.Session, r *db.Request) (*[]Queue, *CodeError) {
 	}
 
 	data := &[]Queue{}
-	//err = DB.CallbackQueueList(r, data)
+	err = DB.CallbackQueueList(r, data)
 
 	if err != nil {
 		return data, err
 	}
 	return data, nil
+}
+
+func CallbackQueueUpdate(s *auth.Session, queueId string, doc map[string]interface{}) (err *CodeError) {
+	err = DB.CallbackQueueUpdate(queueId, doc)
+	return
 }
 
 func CallbackQueueItem(queueId string) (*Queue, *CodeError) {
@@ -98,6 +104,10 @@ func CallbackQueueCreate(q *Queue) *CodeError {
 
 func CallbackQueueDelete(queueId string) *CodeError {
 	return DB.CallbackQueueDelete(queueId)
+}
+
+func CallbackMemberUpdate(s *auth.Session, queueId, memberId string, doc map[string]interface{}) *CodeError {
+	return DB.CallbackMemberUpdate(queueId, memberId, doc)
 }
 
 // endregion

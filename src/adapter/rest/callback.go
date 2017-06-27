@@ -17,7 +17,7 @@ func injectCallmeV2(api router.Party, app router.Party) {
 		callback.Get("/", queueList)               //+
 		callback.Post("/", queueCreate)            //+
 		callback.Get("/{queueId}", queueItem)      //+
-		callback.Put("/{queueId}", queueUpdate)    //TODO
+		callback.Put("/{queueId}", queueUpdate)    //+
 		callback.Delete("/{queueId}", queueDelete) //+
 
 		callback.Get("/{queueId}/members", membersList) //+
@@ -112,7 +112,31 @@ func queueDelete(ctx context.Context) {
 }
 
 func queueUpdate(ctx context.Context) {
-	ctx.Text("queueUpdate " + ctx.Params().Get("queueId"))
+	var q map[string]interface{}
+	err := ctx.ReadJSON(&q)
+	if err != nil {
+		ctx.StatusCode(iris.StatusBadRequest)
+		ctx.JSON(map[string]interface{}{
+			"info":   err.Error(),
+			"status": "error",
+		})
+		return
+	}
+
+	e := callback.CallbackQueueUpdate(auth.GetSessionFromContext(ctx), ctx.Params().Get("queueId"), q)
+	if e != nil {
+		ctx.StatusCode(e.Code)
+		ctx.JSON(map[string]interface{}{
+			"info":   err.Error(),
+			"status": "error",
+		})
+		return
+	}
+
+	ctx.JSON(map[string]interface{}{
+		"info":   "Success",
+		"status": "OK",
+	})
 }
 
 func membersList(ctx context.Context) {
@@ -182,7 +206,31 @@ func memberItem(ctx context.Context) {
 }
 
 func memberUpdate(ctx context.Context) {
-	ctx.Text("memberUpdate " + ctx.Params().Get("queueId") + " " + ctx.Params().Get("memberId"))
+	var q map[string]interface{}
+	err := ctx.ReadJSON(&q)
+	if err != nil {
+		ctx.StatusCode(iris.StatusBadRequest)
+		ctx.JSON(map[string]interface{}{
+			"info":   err.Error(),
+			"status": "error",
+		})
+		return
+	}
+
+	e := callback.CallbackMemberUpdate(auth.GetSessionFromContext(ctx), ctx.Params().Get("queueId"), ctx.Params().Get("memberId"), q)
+	if e != nil {
+		ctx.StatusCode(e.Code)
+		ctx.JSON(map[string]interface{}{
+			"info":   e.Error(),
+			"status": "error",
+		})
+		return
+	}
+
+	ctx.JSON(map[string]interface{}{
+		"info":   "Success",
+		"status": "OK",
+	})
 }
 
 func memberDelete(ctx context.Context) {

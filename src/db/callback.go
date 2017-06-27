@@ -68,6 +68,32 @@ func (db *DB) CallbackQueueDelete(queueId string) (err *helper.CodeError) {
 	return
 }
 
+func (db *DB) CallbackQueueUpdate(queueId string, data map[string]interface{}) (err *helper.CodeError) {
+	if !bson.IsObjectIdHex(queueId) {
+		err = helper.NewCodeError(403, errors.New("Bad queueId"))
+		return
+	}
+
+	set := bson.M{}
+
+	for k, v := range data {
+		if k == "_id" || k == "domain" || k == "queue" {
+			continue
+		}
+		set[k] = v
+	}
+
+	e := db.db.C(COLLECTION_QUEUE).UpdateId(bson.ObjectIdHex(queueId), bson.M{
+		"$set": set,
+	})
+	if e == mgo.ErrNotFound {
+		err = helper.NewCodeError(404, e)
+	} else if e != nil {
+		err = helper.NewCodeError(500, e)
+	}
+	return
+}
+
 func (db *DB) CallbackMembersList(queueId string, r *Request, dataStructure interface{}) (err *helper.CodeError) {
 	r.Filter["queue"] = queueId
 	q := r.GetQueue(db, COLLECTION_MEMBERS, "")
@@ -118,6 +144,39 @@ func (db *DB) CallbackMemberDelete(queueId string, memberId string) (err *helper
 
 	e := db.db.C(COLLECTION_MEMBERS).RemoveId(bson.ObjectIdHex(memberId))
 
+	if e == mgo.ErrNotFound {
+		err = helper.NewCodeError(404, e)
+	} else if e != nil {
+		err = helper.NewCodeError(500, e)
+	}
+	return
+}
+
+func (db *DB) CallbackMemberUpdate(queueId, memberId string, data map[string]interface{}) (err *helper.CodeError) {
+	if !bson.IsObjectIdHex(queueId) {
+		err = helper.NewCodeError(403, errors.New("Bad queueId"))
+		return
+	}
+	if !bson.IsObjectIdHex(memberId) {
+		err = helper.NewCodeError(403, errors.New("Bad memberId"))
+		return
+	}
+
+	set := bson.M{}
+
+	for k, v := range data {
+		if k == "_id" || k == "domain" || k == "queue" {
+			continue
+		}
+		set[k] = v
+	}
+
+	e := db.db.C(COLLECTION_MEMBERS).Update(bson.M{
+		"_id":   bson.ObjectIdHex(memberId),
+		"queue": queueId,
+	}, bson.M{
+		"$set": set,
+	})
 	if e == mgo.ErrNotFound {
 		err = helper.NewCodeError(404, e)
 	} else if e != nil {
