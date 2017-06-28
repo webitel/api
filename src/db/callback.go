@@ -212,6 +212,75 @@ func (db *DB) CallbackMemberCommentAdd(queueId, memberId string, dataStructure i
 	return
 }
 
+func (db *DB) CallbackMemberCommentUpdate(queueId, memberId, commentId, data string) (err *helper.CodeError) {
+	if !bson.IsObjectIdHex(queueId) {
+		err = helper.NewCodeError(403, errors.New("Bad queueId"))
+		return
+	}
+	if !bson.IsObjectIdHex(memberId) {
+		err = helper.NewCodeError(403, errors.New("Bad memberId"))
+		return
+	}
+	if !bson.IsObjectIdHex(commentId) {
+		err = helper.NewCodeError(403, errors.New("Bad commentId"))
+		return
+	}
+
+	e := db.db.C(COLLECTION_MEMBERS).Update(bson.M{
+		"_id":   bson.ObjectIdHex(memberId),
+		"queue": queueId,
+		"comments": bson.M{
+			"$elemMatch": bson.M{
+				"_id": bson.ObjectIdHex(commentId),
+			},
+		},
+	}, bson.M{
+		"$set": bson.M{
+			"comments.$.comment": data,
+		},
+	})
+
+	if e == mgo.ErrNotFound {
+		err = helper.NewCodeError(404, e)
+	} else if e != nil {
+		err = helper.NewCodeError(500, e)
+	}
+	return
+}
+
+func (db *DB) CallbackMemberCommentRemove(queueId, memberId, commentId string) (err *helper.CodeError) {
+	if !bson.IsObjectIdHex(queueId) {
+		err = helper.NewCodeError(403, errors.New("Bad queueId"))
+		return
+	}
+	if !bson.IsObjectIdHex(memberId) {
+		err = helper.NewCodeError(403, errors.New("Bad memberId"))
+		return
+	}
+	if !bson.IsObjectIdHex(commentId) {
+		err = helper.NewCodeError(403, errors.New("Bad commentId"))
+		return
+	}
+
+	e := db.db.C(COLLECTION_MEMBERS).Update(bson.M{
+		"_id":   bson.ObjectIdHex(memberId),
+		"queue": queueId,
+	}, bson.M{
+		"$pull": bson.M{
+			"comments": bson.M{
+				"_id": bson.ObjectIdHex(commentId),
+			},
+		},
+	})
+
+	if e == mgo.ErrNotFound {
+		err = helper.NewCodeError(404, e)
+	} else if e != nil {
+		err = helper.NewCodeError(500, e)
+	}
+	return
+}
+
 // region del
 func (db *DB) FindCallTracking(query interface{}, dataStructure interface{}) (err error) {
 	c := db.db.C(COLLECTION_CALL_TRACKING)

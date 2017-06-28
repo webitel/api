@@ -83,6 +83,8 @@ func CheckAcl(roleName string, resource string, operation string) *helper.CodeEr
 	if roleName == "" || operation == "" {
 		return errorForbidden
 	}
+	//DB.CheckAcl(roleName, resource, operation)
+	return nil
 
 	if acl, ok := _roles.values[roleName]; ok {
 		if allow, ok := acl.Allows[resource]; ok {

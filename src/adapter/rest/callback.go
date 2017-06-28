@@ -22,10 +22,12 @@ func injectCallmeV2(api router.Party, app router.Party) {
 
 		callback.Get("/{queueId}/members", membersList) //+
 		//callback.Post("/{queueId}/members", memberCreate)
-		callback.Get("/{queueId}/members/{memberId}", memberItem)                 //+
-		callback.Put("/{queueId}/members/{memberId}", memberUpdate)               //+
-		callback.Delete("/{queueId}/members/{memberId}", memberDelete)            //+
-		callback.Post("/{queueId}/members/{memberId}/comments", memberAddComment) //+
+		callback.Get("/{queueId}/members/{memberId}", memberItem)                                  //+
+		callback.Put("/{queueId}/members/{memberId}", memberUpdate)                                //+
+		callback.Delete("/{queueId}/members/{memberId}", memberDelete)                             //+
+		callback.Post("/{queueId}/members/{memberId}/comments", memberAddComment)                  //+
+		callback.Put("/{queueId}/members/{memberId}/comments/{commentId}", memberUpdateComment)    //+
+		callback.Delete("/{queueId}/members/{memberId}/comments/{commentId}", memberRemoveComment) //+
 	}
 }
 
@@ -282,6 +284,69 @@ func memberAddComment(ctx context.Context) {
 	ctx.StatusCode(iris.StatusOK)
 	ctx.JSON(map[string]interface{}{
 		"data":   comment,
+		"status": "OK",
+	})
+	return
+}
+
+func memberUpdateComment(ctx context.Context) {
+	var comment map[string]string
+	err := ctx.ReadJSON(&comment)
+	if err != nil {
+		ctx.StatusCode(iris.StatusBadRequest)
+		ctx.JSON(map[string]interface{}{
+			"info":   err.Error(),
+			"status": "error",
+		})
+		return
+	}
+
+	cError := callback.CallbackMemberCommentUpdate(
+		auth.GetSessionFromContext(ctx),
+		ctx.Params().Get("queueId"),
+		ctx.Params().Get("memberId"),
+		ctx.Params().Get("commentId"),
+		comment["comment"],
+	)
+
+	if cError != nil {
+		ctx.StatusCode(cError.Code)
+		ctx.JSON(map[string]interface{}{
+			"info":   cError.Error(),
+			"status": "error",
+		})
+		return
+	}
+
+	ctx.StatusCode(iris.StatusOK)
+	ctx.JSON(map[string]interface{}{
+		"data":   comment,
+		"status": "OK",
+	})
+	return
+}
+
+func memberRemoveComment(ctx context.Context) {
+
+	cError := callback.CallbackMemberCommentRemove(
+		auth.GetSessionFromContext(ctx),
+		ctx.Params().Get("queueId"),
+		ctx.Params().Get("memberId"),
+		ctx.Params().Get("commentId"),
+	)
+
+	if cError != nil {
+		ctx.StatusCode(cError.Code)
+		ctx.JSON(map[string]interface{}{
+			"info":   cError.Error(),
+			"status": "error",
+		})
+		return
+	}
+
+	ctx.StatusCode(iris.StatusOK)
+	ctx.JSON(map[string]interface{}{
+		"info":   "Success",
 		"status": "OK",
 	})
 	return

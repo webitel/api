@@ -33,7 +33,7 @@ type Comment struct {
 	Id        bson.ObjectId `bson:"_id" json:"_id"`
 	CreatedOn int64         `bson:"createdOn,omitempty" json:"createdOn,omitempty"`
 	CreatedBy string        `bson:"createdBy,omitempty" json:"createdBy,omitempty"`
-	Data      string        `bson:"data,omitempty" json:"data,omitempty"`
+	Comment   string        `bson:"comment,omitempty" json:"comment,omitempty"`
 }
 
 type Member struct {
@@ -54,7 +54,7 @@ type Member struct {
 }
 
 var errorDomainIsRequired = NewCodeError(400, errors.New("Domain is required"))
-var errorDataIsRequired = NewCodeError(400, errors.New("Data is required"))
+var errorDataIsRequired = NewCodeError(400, errors.New("Comment is required"))
 
 // region Queue Service
 func CallbackQueueList(s *auth.Session, r *db.Request) (*[]Queue, *CodeError) {
@@ -156,13 +156,26 @@ func CallbackMemberUpdate(s *auth.Session, queueId, memberId string, doc map[str
 }
 
 func CallbackMemberCommentAdd(s *auth.Session, queueId, memberId string, comment *Comment) *CodeError {
-	if comment.Data == "" {
+	if comment.Comment == "" {
 		return errorDataIsRequired
 	}
 	comment.Id = db.MakeId()
 	comment.CreatedBy = s.Id
 	comment.CreatedOn = CurrentTimestamp()
 	return DB.CallbackMemberCommentAdd(queueId, memberId, comment)
+}
+
+func CallbackMemberCommentUpdate(s *auth.Session, queueId, memberId, commentId, data string) *CodeError {
+	if data == "" {
+		return NewCodeError(400, errors.New("Comment is required"))
+	}
+
+	return DB.CallbackMemberCommentUpdate(queueId, memberId, commentId, data)
+}
+
+func CallbackMemberCommentRemove(s *auth.Session, queueId, memberId, commentId string) *CodeError {
+
+	return DB.CallbackMemberCommentRemove(queueId, memberId, commentId)
 }
 
 // endregion

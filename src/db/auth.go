@@ -2,6 +2,7 @@ package db
 
 import (
 	. "../config"
+	"fmt"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -53,38 +54,45 @@ func (db *DB) AclFindDomain(key string, domainName string) (err error, r RoleDom
 }
 
 func (db *DB) CheckAcl(role string, resource string, perm string) (err error) {
-	var resp bson.M
-	//err = db.db.C(COLLECTION_ACL).Pipe([]bson.M{
-	//	{"$match": bson.M{"roles": role}},
-	//	{"$graphLookup": bson.M{
-	//		"from":             COLLECTION_ACL,
-	//		"startWith":        "$parents",
-	//		"connectFromField": "parents",
-	//		"connectToField":   "roles",
-	//		"as":               "_parents",
-	//	}},
-	//	{"$unwind": bson.M{
-	//		"path": "$_parents",
-	//		"preserveNullAndEmptyArrays": true,
-	//	}},
-	//	{"$project": bson.M{
-	//		"allows": 1,
-	//		"_parents": bson.M{
-	//			"$ifNull": []interface{}{"$_parents", []bool{}},
-	//		},
-	//	}},
-	//}).All(&resp)
+	var resp map[string]interface{}
+	err = db.db.C(COLLECTION_ACL).Pipe([]bson.M{
+		{"$match": bson.M{"roles": role}},
+		{"$graphLookup": bson.M{
+			"from":             COLLECTION_ACL,
+			"startWith":        "$parents",
+			"connectFromField": "parents",
+			"connectToField":   "roles",
+			"as":               "_parents",
+		}},
 
-	err = db.db.C("aclPermissions_view").Find(bson.M{
-		"roles": "admin",
-		"allows.blacklist": bson.M{
-			"$in": []string{"*", "r"},
-		},
-	}).Select(bson.M{
-		"_id":                       1,
-		"allows.blacklist":          1,
-		"_parents.allows.blacklist": 1,
+		{"$match": bson.M{
+			"$or": []bson.M{
+				bson.M{"allows.blacklist": bson.M{
+					"$in": []string{"r", "*"},
+				}},
+				bson.M{"_parents.allows.blacklist": bson.M{
+					"$in": []string{"r", "*"},
+				}},
+			},
+		}},
+
+		{"$project": bson.M{
+			"roles": 1,
+		}},
 	}).One(&resp)
+
+	fmt.Println(resp)
+
+	//err = db.db.C("aclPermissions_view").Find(bson.M{
+	//	"roles": "admin",
+	//	"allows.blacklist": bson.M{
+	//		"$in": []string{"*", "r"},
+	//	},
+	//}).Select(bson.M{
+	//	"_id":                       1,
+	//	"allows.blacklist":          1,
+	//	"_parents.allows.blacklist": 1,
+	//}).One(&resp)
 	//fmt.Println(err, resp)
 	return
 }
