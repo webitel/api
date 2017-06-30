@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Diagram>
+  <ID>DATABASE</ID>
+  <OriginalElement>784435cd-c7b3-47ea-9ed6-0cb3d4b54a6f.TABLE:webitel.public.acl_permission</OriginalElement>
+  <nodes>
+    <node x="-121.0" y="326.5">784435cd-c7b3-47ea-9ed6-0cb3d4b54a6f.TABLE:webitel.public.acl_tokens</node>
+    <node x="257.0" y="325.0">784435cd-c7b3-47ea-9ed6-0cb3d4b54a6f.TABLE:webitel.public.acl_permission</node>
+    <node x="98.49999999999999" y="0.0">784435cd-c7b3-47ea-9ed6-0cb3d4b54a6f.TABLE:webitel.public.acl_group</node>
+  </nodes>
+  <notes />
+  <edges>
+    <edge source="784435cd-c7b3-47ea-9ed6-0cb3d4b54a6f.TABLE:webitel.public.acl_permission" target="784435cd-c7b3-47ea-9ed6-0cb3d4b54a6f.TABLE:webitel.public.acl_group">
+      <point x="0.0" y="-76.0" />
+      <point x="312.5" y="144.0" />
+      <point x="231.0" y="144.0" />
+      <point x="53.0" y="52.0" />
+    </edge>
+    <edge source="784435cd-c7b3-47ea-9ed6-0cb3d4b54a6f.TABLE:webitel.public.acl_group" target="784435cd-c7b3-47ea-9ed6-0cb3d4b54a6f.TABLE:webitel.public.acl_group">
+      <point x="-53.0" y="52.0" />
+      <point x="124.99999999999999" y="124.0" />
+      <point x="78.49999999999999" y="124.0" />
+      <point x="78.49999999999999" y="52.0" />
+      <point x="-79.5" y="-0.0" />
+    </edge>
+    <edge source="784435cd-c7b3-47ea-9ed6-0cb3d4b54a6f.TABLE:webitel.public.acl_tokens" target="784435cd-c7b3-47ea-9ed6-0cb3d4b54a6f.TABLE:webitel.public.acl_group">
+      <point x="0.0" y="-75.5" />
+      <point x="96.5" y="144.0" />
+      <point x="178.0" y="144.0" />
+      <point x="0.0" y="52.0" />
+    </edge>
+  </edges>
+  <settings layout="Hierarchic Group" zoom="1.0" x="139.0" y="153.0" />
+  <SelectedNodes />
+  <Categories>
+    <Category>Key columns</Category>
+    <Category>Columns</Category>
+  </Categories>
+</Diagram>
+

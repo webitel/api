@@ -25,81 +25,19 @@ type Acl struct {
 	Allows  map[string][]string `json:"allows" bson:"allows"`
 }
 
-type roles struct {
-	values map[string]Acl
-}
-
-func (r *roles) Reload() {
-	var acl *[]Acl
-	acl = &[]Acl{}
-	DB.AclList(acl)
-
-	for _, v := range *acl {
-		r.values[v.Role] = v
-	}
-}
-
-func NewRoles() (r *roles) {
-	r = &roles{}
-	r.values = make(map[string]Acl)
-	r.Reload()
-	return
-}
-
-var _roles *roles
-
-func init() {
-	_roles = NewRoles()
-}
-
-func AclFindDomain(key, domainName string) (error, string) {
-	err, r := DB.AclFindDomain(key, domainName)
-	if err != nil {
-		return errorForbidden, ""
-	}
-
-	if len(r.Tokens) == 0 {
-		return errorForbidden, ""
-	}
-
-	if r.Tokens[0].Name == "" {
-		return errorForbidden, ""
-	}
-
-	return nil, r.Tokens[0].Name
-}
-
-func AclFindAuth(key string, s *Session) (err error) {
-	DB.AclFindAuth(key, s)
-	if s.RoleName == "" {
-		return errorForbidden
-	}
-	return
-}
-
 var errorForbidden = helper.NewCodeError(403, errors.New("Forbidden"))
 
-func CheckAcl(roleName string, resource string, operation string) *helper.CodeError {
-	if roleName == "" || operation == "" {
+func CheckAcl(s *Session, resource string, operation string) *helper.CodeError {
+	if s.Id == "" || operation == "" {
 		return errorForbidden
 	}
-	//DB.CheckAcl(roleName, resource, operation)
-	return nil
 
-	if acl, ok := _roles.values[roleName]; ok {
-		if allow, ok := acl.Allows[resource]; ok {
-			for _, p := range allow {
-				if p == "*" || p == operation {
-					return nil
-				}
-			}
-		}
-
-		if acl.Parents != "" {
-			return CheckAcl(acl.Parents, resource, operation)
-		}
+	err, _, _, domainName := DB.CheckAcl(s.Id, resource, operation)
+	if err != nil {
+		return err
 	}
-	return errorForbidden
+	s.Domain = domainName
+	return nil
 }
 
 func GetSessionFromContext(ctx context.Context) *Session {

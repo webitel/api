@@ -59,22 +59,11 @@ func apiV2Router(app *iris.Application) router.Party {
 			return
 		}
 
-		if c.Version == 2 && c.Type == "domain" {
-			e, role := auth.AclFindDomain(c.Id, c.Domain)
-			if e != nil {
-				ctx.StatusCode(INVALID_TOKEN_ERROR.Code)
-				ctx.JSON(INVALID_TOKEN_ERROR)
-				return
-			}
-			c.RoleName = role
-		} else if key != "" {
-			e := auth.AclFindAuth(key, c)
-			if e != nil {
-				ctx.StatusCode(INVALID_TOKEN_ERROR.Code)
-				ctx.JSON(INVALID_TOKEN_ERROR)
-				return
-			}
-		} else {
+		if c.Id == "" && key != "" {
+			c.Id = key
+		}
+
+		if c.Id == "" {
 			ctx.StatusCode(INVALID_TOKEN_ERROR.Code)
 			ctx.JSON(INVALID_TOKEN_ERROR)
 			return

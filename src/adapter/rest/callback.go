@@ -2,8 +2,8 @@ package rest
 
 import (
 	"../../db"
+	"../../models/callback"
 	"../../services/auth"
-	"../../services/callback"
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/context"
 	"github.com/kataras/iris/core/router"

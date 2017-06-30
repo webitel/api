@@ -58,7 +58,7 @@ var errorDataIsRequired = NewCodeError(400, errors.New("Comment is required"))
 
 // region Queue Service
 func CallbackQueueList(s *auth.Session, r *db.Request) (*[]Queue, *CodeError) {
-	err := auth.CheckAcl(s.RoleName, "account", "d")
+	err := auth.CheckAcl(s, "license", "r")
 	if err != nil {
 		return nil, err
 	}
@@ -71,6 +71,7 @@ func CallbackQueueList(s *auth.Session, r *db.Request) (*[]Queue, *CodeError) {
 	}
 
 	data := &[]Queue{}
+	return data, nil
 	err = DB.CallbackQueueList(r, data)
 
 	if err != nil {

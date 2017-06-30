@@ -17,6 +17,7 @@ func ListenAndServe() {
 	injectLogger(app)
 	v2 := apiV2Router(app)
 
+	injectAclV2(v2, app)
 	injectCallmeV2(v2, app)
 
 	injectErrors(app)
